@@ -7,7 +7,7 @@
  */
 
 import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View, TouchableOpacity} from 'react-native';
+import {Platform, StyleSheet, Text, View, TouchableOpacity, Image} from 'react-native';
 import { RNCamera } from 'react-native-camera';
 
 const instructions = Platform.select({
@@ -17,9 +17,37 @@ const instructions = Platform.select({
     'Shake or press menu button for dev menu',
 });
 
-type Props = {};
-export default class App extends Component<Props> {
-  render() {
+export default class App extends React.PureComponent {
+  state = {
+    type: RNCamera.Constants.Type.back,
+    view: 'camera',
+    path : null
+  }
+
+  takePicture = async function() {
+    if (this.camera) {
+      const options = { quality: 0.5, base64: true, doNotSave:false };
+      const data = await this.camera.takePictureAsync(options)
+      this.setState({path : data.uri})
+      console.log('Take Picture Response : ', data);
+    }
+  };
+  flipCamera = function() {
+    return this.setState({ 
+      type: this.state.type === RNCamera.Constants.Type.back 
+        ? RNCamera.Constants.Type.front 
+        : RNCamera.Constants.Type.back 
+    });
+  } 
+  flipView = function() {
+    return this.setState({ 
+      view: this.state.view === 'camera'
+        ? 'image' 
+        : 'camera'
+    });
+  }
+  renderCamera() {
+    const { type } = this.state
     return (
       <View style={styles.container}>
         <RNCamera
@@ -27,7 +55,7 @@ export default class App extends Component<Props> {
               this.camera = ref;
             }}
             style = {styles.preview}
-            type={RNCamera.Constants.Type.back}
+            type={type}
             flashMode={RNCamera.Constants.FlashMode.on}
             permissionDialogTitle={'Permission to use camera'}
             permissionDialogMessage={'We need your permission to use your camera phone'}
@@ -36,23 +64,49 @@ export default class App extends Component<Props> {
             }}
         />
         <View style={{flex: 0, flexDirection: 'row', justifyContent: 'center',}}>
-        <TouchableOpacity
-            onPress={this.takePicture.bind(this)}
-            style = {styles.capture}
-        >
-            <Text style={{fontSize: 14}}> SNAP </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+              onPress={this.takePicture.bind(this)}
+              style = {styles.capture}
+          >
+              <Text style={{fontSize: 14}}> SNAP </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+              onPress={this.flipCamera.bind(this)}
+              style = {styles.capture}
+          >
+              <Text style={{fontSize: 14}}> FLIP </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+              onPress={this.flipView.bind(this)}
+              style = {styles.capture}
+          >
+              <Text style={{fontSize: 14}}> Change View </Text>
+          </TouchableOpacity>
+          
         </View>
+      </View>
+    )
+  }
+  renderImage() {
+    console.log('renderImage', this.state.path)
+    return (
+      <View>
+        <Image
+          source={{ uri: this.state.path }}
+          style={styles.preview}
+        />
+        <Text
+          style = {styles.capture}
+          onPress={() => this.setState({ view: 'camera' })}
+        >Cancel
+        </Text>
       </View>
     );
   }
-  takePicture = async function() {
-    if (this.camera) {
-      const options = { quality: 0.5, base64: true };
-      const data = await this.camera.takePictureAsync(options)
-      console.log(data.uri);
-    }
-  };
+  render() {
+    
+    return this.state.view === 'camera' ? this.renderCamera() : this.renderImage()
+  }
 }
 
 const styles = StyleSheet.create({
