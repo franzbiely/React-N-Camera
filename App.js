@@ -7,7 +7,7 @@
  */
 
 import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View, TouchableOpacity, Image} from 'react-native';
+import {Platform, StyleSheet, Text, View, TouchableOpacity, Image, CameraRoll, PermissionsAndroid} from 'react-native';
 import { RNCamera } from 'react-native-camera';
 
 const instructions = Platform.select({
@@ -29,7 +29,23 @@ export default class App extends React.PureComponent {
       const options = { quality: 0.5, base64: true, doNotSave:false };
       const data = await this.camera.takePictureAsync(options)
       this.setState({path : data.uri})
-      console.log('Take Picture Response : ', data);
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          {
+            title: 'My App Storage Permission',
+            message: 'My App needs access to your storage ' +
+              'so you can save your photos',
+          },
+        );
+        await CameraRoll.saveToCameraRoll(data.uri, 'photo').then(function(v) {
+          console.log(v);
+        });
+        console.log('Take Picture Response : ', data);
+      } catch (err) {
+        console.error('Failed to request permission ', err);
+      }
+      
     }
   };
   flipCamera = function() {
